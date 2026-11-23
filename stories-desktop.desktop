@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Stories
+Comment=Listen to your audiobooks from storiesd
+Exec=stories-desktop
+Icon=audio-headphones
+Terminal=false
+Categories=Audio;AudioVideo;Player;
