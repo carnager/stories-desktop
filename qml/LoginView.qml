@@ -12,6 +12,8 @@ Rectangle {
     property string mode: Core.serverUrl.length > 0 ? "remote" : ""
     readonly property bool working: Core.busy || LocalServer.busy
     readonly property string problem: mode === "local" ? (LocalServer.error || Core.error) : Core.error
+    readonly property bool needsFolder: mode === "local" && !LocalServer.hasConfig && !LocalServer.running
+    readonly property bool choosingPassword: mode === "local" && !LocalServer.hasPassword
 
     component Field: TextField {
         Layout.fillWidth: true
@@ -92,9 +94,13 @@ Rectangle {
         Text {
             Layout.fillWidth: true
             Layout.bottomMargin: 14
-            text: root.mode === "local" ? (LocalServer.hasConfig
+            text: root.mode === "local" ? (LocalServer.running
+                    ? "storiesd is already running on this computer. Enter its password to connect."
+                    : root.choosingPassword
+                    ? "storiesd will serve your audiobooks as a service of your user. Your phone can connect to it too."
+                    : LocalServer.hasConfig
                     ? "storiesd is already set up on this computer. Enter its password to start it and connect."
-                    : "storiesd will serve this folder, as a service of your user. Your phone can connect to it too.")
+                    : "storiesd needs its folder again. Your positions are kept, so enter the password you set before.")
                 : root.mode === "remote" ? "Connect to storiesd on your home server or another computer."
                 : "Where do your audiobooks live?"
             color: Theme.secondary
@@ -107,9 +113,10 @@ Rectangle {
             enabled: LocalServer.available
             icon_: "computer"
             text: "On this computer"
-            detail: LocalServer.available ? "Set up storiesd here. It starts with your session."
+            detail: LocalServer.running ? "storiesd is already running here. Connect to it."
+                  : LocalServer.available ? "Set up storiesd here. It starts with your session."
                                           : "Needs storiesd and systemd, which weren't found."
-            onClicked: { Core.clearError(); root.mode = "local" }
+            onClicked: { Core.clearError(); LocalServer.refresh(); root.mode = "local" }
         }
         Choice {
             visible: root.mode === ""
@@ -119,9 +126,9 @@ Rectangle {
             onClicked: { Core.clearError(); root.mode = "remote" }
         }
 
-        Label_ { visible: root.mode === "local" && !LocalServer.hasConfig; text: "Audiobook folder" }
+        Label_ { visible: root.needsFolder; text: "Audiobook folder" }
         RowLayout {
-            visible: root.mode === "local" && !LocalServer.hasConfig
+            visible: root.needsFolder
             Layout.fillWidth: true
             spacing: 8
             Field {
@@ -144,13 +151,20 @@ Rectangle {
 
         Label_ {
             visible: root.mode !== ""
-            text: root.mode === "local" && !LocalServer.hasConfig ? "Choose a password" : "Password"
+            text: root.choosingPassword ? "Choose a password" : "Password"
         }
         Field {
             id: password
             visible: root.mode !== ""
             echoMode: TextInput.Password
-            placeholderText: root.mode === "local" && !LocalServer.hasConfig ? "At least 8 characters, used only for Stories" : ""
+            placeholderText: root.choosingPassword ? "At least 8 characters, used only for Stories" : ""
+            onAccepted: root.choosingPassword ? repeat.forceActiveFocus() : root.submit()
+        }
+        Label_ { visible: root.choosingPassword; text: "Repeat the password" }
+        Field {
+            id: repeat
+            visible: root.choosingPassword
+            echoMode: TextInput.Password
             onAccepted: root.submit()
         }
 
@@ -176,13 +190,13 @@ Rectangle {
             Pill {
                 text: "Back"
                 enabled: !root.working
-                onClicked: { Core.clearError(); password.text = ""; root.mode = "" }
+                onClicked: { Core.clearError(); password.text = ""; repeat.text = ""; root.mode = "" }
             }
             Item { Layout.fillWidth: true }
             Pill {
                 primary: true
-                text: root.working ? "Working…" : root.mode === "local" && !LocalServer.hasConfig ? "Set up" : "Connect"
-                enabled: !root.working && password.text.length > 0
+                text: root.working ? "Working…" : root.choosingPassword || root.needsFolder ? "Set up" : "Connect"
+                enabled: !root.working && password.text.length > 0 && (!root.choosingPassword || repeat.text.length > 0)
                 onClicked: root.submit()
             }
         }
@@ -193,7 +207,7 @@ Rectangle {
             return
         Core.clearError()
         if (mode === "local")
-            LocalServer.setup(localFolder.text, password.text)
+            LocalServer.setup(localFolder.text, password.text, repeat.text)
         else
             Core.login(address.text, password.text)
     }
@@ -201,8 +215,10 @@ Rectangle {
     Connections {
         target: Core
         function onSignedInChanged() {
-            if (Core.signedIn)
+            if (Core.signedIn) {
                 password.text = ""
+                repeat.text = ""
+            }
         }
     }
 }

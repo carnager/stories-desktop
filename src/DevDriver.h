@@ -59,7 +59,7 @@ private:
         if (word == u"wait")
             delay = rest.toInt();
         else if (word == u"setup")
-            m_local->setup(rest.section(u'|', 0, 0), rest.section(u'|', 1));
+            m_local->setup(rest.section(u'|', 0, 0), rest.section(u'|', 1, 1), rest.section(u'|', 2, 2));
         else if (word == u"login")
             m_core->login(rest.section(u'|', 0, 0), rest.section(u'|', 1));
         else if (word == u"play")
