@@ -9,6 +9,16 @@ The first start asks where your audiobooks live:
   existing storiesd config or unit is used and never rewritten.
 - **On a server** connects to a storiesd that's already running.
 
+## Install
+
+On Arch, from the [mooned repository](https://repo.mooned.de):
+
+```sh
+sudo pacman -S stories-desktop-git storiesd-git
+```
+
+`storiesd-git` is only needed to run the server on this computer.
+
 ## Build
 
 Needs Qt 6.5+ (Quick, Quick Controls, Network, DBus, SVG), libmpv, QtKeychain
@@ -38,3 +48,7 @@ Media keys and `playerctl` work through MPRIS.
 
 The token is kept in your keyring. Without one, it's in a file only your user
 can read.
+
+## License
+
+GPL-3.0.

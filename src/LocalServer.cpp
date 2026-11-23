@@ -155,7 +155,8 @@ int LocalServer::freePort() const
 
 bool LocalServer::writeUnit()
 {
-    if (QFile::exists(unitPath()))
+    // Installed as a package, storiesd brings its own unit.
+    if (QFile::exists(unitPath()) || QFile::exists(u"/usr/lib/systemd/user/storiesd.service"_s))
         return true;
     QDir().mkpath(QFileInfo(unitPath()).path());
     QSaveFile file(unitPath());
